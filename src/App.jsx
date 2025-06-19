@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 const sedes = {
@@ -28,13 +27,47 @@ export default function App() {
   const [habitacion, setHabitacion] = useState("");
   const [paciente, setPaciente] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [registros, setRegistros] = useState([]);
 
-  const handleEnviar = () => {
+  const handleEnviar = async () => {
     if (!codigo || !sede || !habitacion || !paciente) {
       alert("Por favor, completá todos los campos.");
       return;
     }
-    console.log({ codigo, sede, habitacion, paciente });
+
+    const nuevoRegistro = {
+      codigo,
+      sede,
+      habitacion,
+      paciente,
+      fecha: new Date().toLocaleString(),
+    };
+    setRegistros([...registros, nuevoRegistro]);
+
+    try {
+      await fetch("https://api.sheetbest.com/sheets/08b15f41-9b7d-4211-aa0f-a4bd40c3951d", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nuevoRegistro),
+      });
+
+      await fetch("https://formsubmit.co/ajax/ingenieria.clinica@csantacatalina.com.ar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          Codigo: codigo,
+          Sede: sede,
+          Habitacion: habitacion,
+          Paciente: paciente,
+        }),
+      });
+    } catch (error) {
+      console.error("Error al enviar datos:", error);
+    }
+
     setEnviado(true);
     setTimeout(() => setEnviado(false), 3000);
     setCodigo("");
@@ -44,7 +77,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white text-black flex flex-col items-center justify-start p-4">
       <div className="w-full max-w-md space-y-4">
         <h1 className="text-2xl font-bold text-center">Registro de Ubicación</h1>
 
@@ -99,6 +132,34 @@ export default function App() {
 
         {enviado && <p className="text-green-600 text-center">Datos enviados correctamente.</p>}
       </div>
+
+      {registros.length > 0 && (
+        <div className="w-full max-w-2xl mt-10">
+          <h2 className="text-xl font-bold mb-2 text-center">Registros enviados</h2>
+          <table className="w-full border text-sm">
+            <thead>
+              <tr className="bg-orange-100">
+                <th className="border p-1">Fecha</th>
+                <th className="border p-1">Código</th>
+                <th className="border p-1">Sede</th>
+                <th className="border p-1">Habitación</th>
+                <th className="border p-1">Paciente</th>
+              </tr>
+            </thead>
+            <tbody>
+              {registros.map((r, idx) => (
+                <tr key={idx} className="odd:bg-gray-50">
+                  <td className="border p-1">{r.fecha}</td>
+                  <td className="border p-1">{r.codigo}</td>
+                  <td className="border p-1">{r.sede}</td>
+                  <td className="border p-1">{r.habitacion}</td>
+                  <td className="border p-1">{r.paciente}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
